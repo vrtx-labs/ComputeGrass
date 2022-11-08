@@ -1,0 +1,23 @@
+{
+  "name": "de.vrtx.computegrass",
+  "displayName": "Compute Grass (BIRP)",
+  "version": "0.4.0",
+  "unity": "2020.3",
+  "author": {
+    "name": "Tobias Pott (VRTX Labs GmbH)",
+    "email": "tobias@vrtxlabs.com",
+    "url": "http://www.vrtxlabs.com/"
+  },
+  "licensesUrl": "Apache-2.0", 
+  "description": "A grass shader based on GPU-computed geometry for the built-in render pipeline. Supported on iOS, Android and Desktop (Windows, macOS)",
+  "keywords": [
+    "3D",
+    "foliage",
+    "grass",
+    "compute shader",
+    "shader",
+    "built-in render pipeline",
+    "standard render pipeline",
+    "unity"
+  ]
+}

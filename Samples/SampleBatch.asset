@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59e14a5fde1c1824cbd18422b2f098ee, type: 3}
+  m_Name: SampleBatch
+  m_EditorClassIdentifier: 
+  definition: {fileID: 11400000, guid: 535ae36d3bd14774aaa545ba2f22d389, type: 2}
+  parameters: {fileID: 11400000, guid: e5f0a9794f98dc44197a543ff033a6e9, type: 2}
+  meshes:
+  - {fileID: 4300000, guid: 308346a586e004040899fbbf6edf23a8, type: 2}
+  - {fileID: 4300000, guid: 72293e5a56535f24283e5bd56eab20ea, type: 2}
+  - {fileID: 4300000, guid: 291e89ec90bed564f86ad60776b721f8, type: 2}
+  - {fileID: 4300000, guid: bd88bbfd8cd7b7441a649e4e13f8f0db, type: 2}
+  - {fileID: 4300000, guid: d348491569e6a134c889b8ff5249ff5c, type: 2}
+  - {fileID: 4300000, guid: ea4928437e7e7c043816eecfc7bf2daf, type: 2}

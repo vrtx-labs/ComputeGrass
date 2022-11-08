@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f56026b3495221c4b8e939dbe3372362, type: 3}
+  m_Name: SampleParameters
+  m_EditorClassIdentifier: 
+  _parameters:
+    material: {fileID: 2100000, guid: 4a3657d831f88f8468c840e65ed78f72, type: 2}
+    computeShader: {fileID: 7200000, guid: e793a08a81844ae4cac281a371cec573, type: 3}
+    seed: 1337
+    subdivisionLevel: 1
+    subdivisionMethod: 1
+    subdivisionOptions: -1
+    triangleAreaCutoff: 0.00625
+    bladeShape: 1
+    bladesPerVertex: 2
+    segmentsPerBlade: 2
+    enableLevelOfDetail: 1
+    ignoreInEditor: 1
+    minFadeDistance: 60
+    maxFadeDistance: 120
+    windSpeed: 10
+    windStrength: 0.05
+    castShadow: 1
+    updateOn: 1

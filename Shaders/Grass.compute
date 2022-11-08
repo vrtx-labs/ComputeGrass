@@ -1,0 +1,302 @@
+// VRTX Labs GmbH version by Tobias Pott
+// credits to @Minionsart https://www.patreon.com/posts/compute-grass-in-63162723 & https://www.patreon.com/minionsart/posts
+// credits  to  forkercat https://gist.github.com/junhaowww/fb6c030c17fe1e109a34f1c92571943f
+// and  NedMakesGames https://gist.github.com/NedMakesGames/3e67fabe49e2e3363a657ef8a6a09838
+// for the base setup for compute shaders
+
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel Main
+#pragma multi_compile __ TAPERED
+#pragma multi_compile __ LEVELOFDETAIL
+#pragma multi_compile __ VARIANTS_2 VARIANTS_3 VARIANTS_4
+
+// include UnityCG to gain access to built-in variables
+#include "UnityCG.cginc" 
+#include "GrassTypes.hlsl"
+#include "GrassFunctions.hlsl"
+
+// Define some constants
+#define PI          3.14159265358979323846
+#define TWO_PI      6.28318530717958647693
+
+
+#if VARIANTS_2
+#define NUMBER_OF_VARIANTS 2
+#elif VARIANTS_3
+#define NUMBER_OF_VARIANTS 3
+#elif VARIANTS_4
+#define NUMBER_OF_VARIANTS 4
+#else
+#define NUMBER_OF_VARIANTS 1
+#endif
+
+
+// These values are bounded by limits in C# scripts,
+// because in the script we need to specify the buffer size
+#define GRASS_SEGMENTS 5 // segments per blade
+
+// Set total vertices count to even (not TAPERED) or odd (TAPERED)
+#if !TAPERED
+#define GRASS_NUM_VERTICES_PER_BLADE (GRASS_SEGMENTS * 2 + 2)
+#else
+#define GRASS_NUM_VERTICES_PER_BLADE (GRASS_SEGMENTS * 2 + 1)
+#endif
+
+
+// Source buffers, arranged as a vertex buffer and index buffer
+StructuredBuffer<SourceVertex> _SourceVertices;
+
+// A buffer containing the generated mesh
+AppendStructuredBuffer<DrawTriangle> _DrawTriangles;
+
+// The kernel will count the number of vertices, so this must be RW enabled
+RWStructuredBuffer<IndirectDrawArgs> _IndirectArgsBuffer;
+
+// A buffer containing the blade variant data
+StructuredBuffer<BladeArgs> _BladeVariants;
+
+
+// ----------------------------------------
+// (Set from C# code)
+// Variables set by the renderer
+int _NumSourceVertices;
+
+// Local to world matrix
+float4x4 _LocalToWorld;
+
+// Wind (per patch)
+half _WindSpeed;
+float _WindStrength;
+
+// Per-Lush
+int _MaxBladesPerVertex;
+int _MaxSegmentsPerBlade;
+
+// Camera
+float _MinFadeDist;
+float _MaxFadeDist;
+
+// Uniforms
+Texture2D<float4> _DensityMap;
+SamplerState sampler_DensityMap;
+
+// ----------------------------------------
+
+// ! ! ! ! 
+// ToDo:
+//	Remove SourceVertex parameter and properly include the variant index in the SourceVertex data (and store it per-triangle/blade instead of per-vertex
+// Generate each grass vertex for output triangles
+DrawVertex GrassVertex(uint index, float3 positionOS, float2 size, float offset, float curve, float2 uv, float3x3 rotation, float3 normal, float3 tangent, float3 ortho, uint variant)
+{
+	//float width, float height;
+	DrawVertex output = (DrawVertex)0;
+
+	float3 tangentOffset = tangent * curve
+		+ ortho * (size.x)
+		+ normal * size.y;
+	float3 curveOffset = tangent * offset;
+
+	float3 newPosOS = positionOS + mul(rotation, tangentOffset + curveOffset) + curveOffset;
+	output.positionWS = mul(_LocalToWorld, float4(newPosOS, 1)).xyz;
+
+	output.uv = float3(uv, variant);
+	output.diffuseColor = float3(1, 1, 1);
+	// shadows is exactly as positionWS (no need to create a new variable)
+	return output;
+}
+float GetDensity(float2 uv, uint variant)
+{
+	// sample density map for per-channel density (R => Variant 0, G => Variant 1, B => Variant 2, A => Variant 3)
+	float4 density = _DensityMap.SampleLevel(sampler_DensityMap, uv, 0);
+	if (variant == 0)
+		return density.x;
+	else if (variant == 1)
+		return density.y;
+	else if (variant == 2)
+		return density.z;
+	else if (variant == 3)
+		return density.w;
+	else
+		return 1.0f;
+}
+
+
+// ----------------------------------------
+// The main kernel
+[numthreads(128, 1, 1)]
+void Main(uint3 id : SV_DispatchThreadID)
+{
+	// Return if every triangle has been processed
+	if ((int)id.x >= _NumSourceVertices)
+		return;
+
+	SourceVertex sv = _SourceVertices[id.x];
+
+	float cameraPosition = _WorldSpaceCameraPos;
+	// ensure variant uses blades in variant range
+	uint svVariant = id.x % (uint)NUMBER_OF_VARIANTS;
+
+	// Segments
+	int numSegmentsPerBlade = max(1, _MaxSegmentsPerBlade);
+
+	// Set number of triangles per blade, TAPERED uses one less
+#if !TAPERED
+	int numTrianglesPerBlade = (numSegmentsPerBlade) * 2;
+#else
+	int numTrianglesPerBlade = (numSegmentsPerBlade - 1) * 2 + 1;
+#endif
+
+
+#if LEVELOFDETAIL
+	float3 worldPos = mul(_LocalToWorld, float4(sv.positionOS, 1)).xyz;
+	float distanceFromCamera = distance(worldPos, cameraPosition);
+	float distanceCutoff = saturate(1 - saturate((distanceFromCamera - _MinFadeDist) / (_MaxFadeDist - _MinFadeDist)));
+	float distanceFade = saturate(1 - saturate((distanceFromCamera - _MinFadeDist - 5) / (_MaxFadeDist - _MinFadeDist - 5)));
+
+	if (distanceCutoff < 0)
+		return;
+#endif
+
+	// calculate normal, tangent and orthonormal
+	float3 svNormalWS = normalize(mul(sv.normalOS, (float3x3)_LocalToWorld));
+	float3 svTangent = cross(svNormalWS, float3(1, 0, 0)); // fwd axis
+	if (length(svTangent) == 0) {
+		svTangent = cross(svNormalWS, float3(0, 0, 1));
+	}
+	if (length(svTangent) == 0) {
+		svTangent = cross(svNormalWS, float3(0, 1, 0));
+	}
+
+	float3 svOrtho = normalize(cross(svNormalWS, svTangent)); // x-axis
+
+
+
+	float3 perpendicularAngle = float3(0, 0, 1);
+	float3 faceNormal = cross(perpendicularAngle, sv.normalOS);
+
+	float3 v0 = sv.positionOS.xyz;
+
+	// Wind
+	float3 wind1 = float3(
+		sin(_Time.x * _WindSpeed + v0.x) + sin(_Time.x * _WindSpeed + v0.z * 2) + sin(_Time.x * _WindSpeed * 0.1 + v0.x),
+		0,
+		cos(_Time.x * _WindSpeed + v0.x * 2) + cos(_Time.x * _WindSpeed + v0.z));
+	wind1 *= _WindStrength;
+
+	float3 seed = sv.positionOS.xyz;
+	float randomisedPos = rand(seed);
+
+
+	// get per-blade properties
+	BladeArgs blade = _BladeVariants[svVariant];
+
+	// sample density map for per-channel density (R => Variant 0, G => Variant 1, B => Variant 2, A => Variant 3)
+	float variantDensity = GetDensity(sv.uv, svVariant);
+	/* if (variantDensity <= 0.05)
+		return;*/
+
+	// Set grass height
+	half bladeHeight = blade.height;
+	if (blade.randomHeight != 0.0f)
+	{
+		float randomHeightOffset = randomisedPos * blade.randomHeight;
+		bladeHeight = clamp(bladeHeight - randomHeightOffset, 0, bladeHeight + blade.randomHeight);
+	}
+
+	half bladeWidth = bladeHeight * 0.5f;
+	bladeWidth *= blade.aspectRatio;
+
+#if LEVELOFDETAIL
+	// apply level of detail fading of blade (reduces graphics shader fragment pass load)
+	bladeHeight *= distanceFade;
+	bladeWidth *= distanceFade;
+#endif
+
+
+	// init draw vertices array
+	DrawVertex drawVertices[GRASS_NUM_VERTICES_PER_BLADE];
+	int minDensity = variantDensity <= 0.05f ? 0 : 1;
+
+
+	// # of Blades
+	//int numBladesPerVertex = max(1, _MaxBladesPerVertex);
+	int numBladesPerVertex = max(minDensity, ceil(_MaxBladesPerVertex * variantDensity));
+
+	if (numBladesPerVertex <= 0)
+		return;
+
+	for (int j = 0; j < numBladesPerVertex; ++j)
+	{
+		float bladeRadius = j / (float)numBladesPerVertex;
+		float offset = (1 - bladeRadius) * blade.radius;
+
+		// shuffle around some values for rotation randomisation
+		float bladeIndexOffset = 1 - randomisedPos;
+		if ((uint)j % 2 == 1)
+		{
+			offset *= -1;
+			randomisedPos *= -42.1337; // magic number ;)
+		}
+
+		// set rotation and radius of the blades
+		float3x3 rotationMatrix = AngleAxis3x3(randomisedPos * TWO_PI * (j * -j + bladeIndexOffset), svNormalWS);
+
+		for (int i = 0; i < numSegmentsPerBlade; ++i)
+		{
+			// taper width, increase height
+			float t = i / (float)numSegmentsPerBlade;
+			float segmentHeight = bladeHeight * t;
+			float segmentWidth = bladeWidth;
+
+#if TAPERED
+			// reduce width by the height along the grass blade
+			segmentWidth *= (1 - t);
+			// the first (0) grass segment is thinner
+			segmentWidth = i == 0 ? blade.rootWidth * segmentWidth : segmentWidth;
+#endif 
+
+			float segmentForward = 0;
+			if (blade.curve > 0.0f)
+				segmentForward = blade.forward * pow(abs(t), blade.curve);
+
+			// First grass (0) segment does not get displaced by wind effect
+			float3 newPos = (i == 0) ? v0 : v0 + wind1 * t;
+
+			// Append First Vertex
+			drawVertices[i * 2] = GrassVertex(j, newPos, float2(segmentWidth, segmentHeight), offset, segmentForward, float2(0, t), rotationMatrix, svNormalWS, svTangent, svOrtho, svVariant);
+			// Append Second Vertex
+			drawVertices[i * 2 + 1] = GrassVertex(j, newPos, float2(-segmentWidth, segmentHeight), offset, segmentForward, float2(1, t), rotationMatrix, svNormalWS, svTangent, svOrtho, svVariant);
+		}
+		// Append Top Vertex
+		float3 topPosOS = v0 + wind1;
+
+		// calculate top vertex forward offset in dependence to the blade curve factor (0 = no offset)
+		float topSegmentForward = 0;
+		if (blade.curve > 0.0f)
+			topSegmentForward = blade.forward;
+
+#if !TAPERED
+		drawVertices[numSegmentsPerBlade * 2] = GrassVertex(j, topPosOS, float2(bladeWidth, bladeHeight), offset, topSegmentForward, float2(0, 1), rotationMatrix, svNormalWS, svTangent, svOrtho, svVariant);
+		drawVertices[numSegmentsPerBlade * 2 + 1] = GrassVertex(j, topPosOS, float2(-bladeWidth, bladeHeight), offset, topSegmentForward, float2(1, 1), rotationMatrix, svNormalWS, svTangent, svOrtho, svVariant);
+#else
+		drawVertices[numSegmentsPerBlade * 2] = GrassVertex(j, topPosOS, float2(0, bladeHeight), offset, blade.forward, float2(0.5f, 1), rotationMatrix, svNormalWS, svTangent, svOrtho, svVariant);
+#endif
+
+		// Append Triangles
+		for (int k = 0; k < numTrianglesPerBlade; ++k)
+		{
+			DrawTriangle tri = (DrawTriangle)0;
+			tri.normalOS = faceNormal;
+			tri.vertices[0] = drawVertices[k];
+			tri.vertices[1] = drawVertices[k + 1];
+			tri.vertices[2] = drawVertices[k + 2];
+			_DrawTriangles.Append(tri);
+		}
+
+	}  // For loop - Blade
+
+	// InterlockedAdd(a, b) adds b to a and stores the value in a. It is thread-safe
+	// This call counts the number of vertices, storing it in the indirect arguments
+	// This tells the renderer how many vertices are in the mesh in DrawProcedural
+	InterlockedAdd(_IndirectArgsBuffer[0].numVerticesPerInstance, numTrianglesPerBlade * numBladesPerVertex * 3);
+}
