@@ -118,6 +118,7 @@ namespace VRTX.ComputeGrass
             this.m_parametersOverride = parameters;
         }
 
+#if !UNITY_IOS && !UNITY_ANDROID
         private void OnBecameVisible()
         {
             //Debug.Log(nameof(OnBecameVisible));
@@ -129,6 +130,7 @@ namespace VRTX.ComputeGrass
             //Debug.Log(nameof(OnBecameInvisible));
             this.enabled = false;
         }
+#endif
 
 
         public void OnValidate()
