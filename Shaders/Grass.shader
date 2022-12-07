@@ -3,9 +3,14 @@ Shader "ComputeGrass/Grass (Graphics)"
     Properties
     {
         _Cutoff("Cutoff", Range(0, 1)) = 0.5
-        _TopTint("Top Tint", Color) = (1, 1, 1, 1)
-        _BottomTint("Bottom Tint", Color) = (1, 1, 1, 1)
+		[Space]
+        _TopTint("Top Tint Start", Color) = (1, 1, 1, 1)
+        _TopTintRange("Top Tint Range", Color) = (1, 1, 1, 1)
+        [Space]
+        _BottomTint("Bottom Tint Start", Color) = (1, 1, 1, 1)
+        _BottomTintRange("Bottom Tint Range", Color) = (1, 1, 1, 1)
         _BottomTintOffset("Bottom Tint Offset", Range(-1,1)) = 1
+        [Space]
         _ShadowAdjustment("Shadow Details Blend", Range(0,0.5)) = 0.15
     }
     
@@ -27,7 +32,8 @@ Shader "ComputeGrass/Grass (Graphics)"
         float3 positionWS : TEXCOORD1;  // Position in world space
         float3 normalWS : TEXCOORD2;    // Normal vector in world space
         float3 diffuseColor : COLOR;
-        int index : TEXCOORD6;
+        uint index : TEXCOORD6;
+        float seed: TEXCOORD7;
         UNITY_LIGHTING_COORDS(3, 4)
         UNITY_FOG_COORDS(5)
     };
@@ -39,8 +45,9 @@ Shader "ComputeGrass/Grass (Graphics)"
 
     // Properties
     uint _NumOfVariants;
-    float4 _TopTint;
-    float4 _BottomTint;
+    uint _SegmentsPerBlade; // number of double-tris in each blade
+    float4 _TopTint, _TopTintRange;
+    float4 _BottomTint, _BottomTintRange;
     float _BottomTintOffset;
     float _Cutoff;
     float _ShadowAdjustment;
@@ -52,7 +59,6 @@ Shader "ComputeGrass/Grass (Graphics)"
     sampler2D _Variant1;
     sampler2D _Variant2;
     sampler2D _Variant3;
-
 
 
     float4 tex2DVariant(uint index, float2 texcoord)
@@ -77,20 +83,22 @@ Shader "ComputeGrass/Grass (Graphics)"
         // Initialize the output struct
         v2f output = (v2f)0;
         
+        uint triIndex = vertexID / 3;
+		uint bladeIndex = vertexID / (_SegmentsPerBlade * 2 * 3);
         // Get the vertex from the buffer
         // Since the buffer is structured in triangles, we need to divide the vertexID by three
         // to get the triangle, and then modulo by 3 to get the vertex on the triangle
-        DrawTriangle tri = _DrawTriangles[vertexID / 3];
+        DrawTriangle tri = _DrawTriangles[triIndex];
         DrawVertex input = tri.vertices[vertexID % 3];
         
         output.pos = UnityObjectToClipPos(input.positionWS);
         output.positionWS = input.positionWS;
-        float3 faceNormal = tri.normalOS;
+        float3 faceNormal = tri.normalWithSeed.xyz;
         output.normalWS = faceNormal;
         
-        output.uv = input.uv.xy;
-        output.index = (int)ceil(input.uv.z);
-        output.diffuseColor = input.diffuseColor;
+        output.uv = input.uvWithIndex.xy;
+        output.index = (int)ceil(input.uvWithIndex.z);
+        output.seed = tri.normalWithSeed.w;
         
         // making pointlights work requires v.vertex
         unityTransferVertexToFragmentSucksHack v;
@@ -127,17 +135,22 @@ Shader "ComputeGrass/Grass (Graphics)"
             {
                 // fade over the length of the grass
                 float verticalFade = saturate(i.uv.y - _BottomTintOffset);
+
+	            float4 bottomTint = lerp(_BottomTint, _BottomTintRange, i.seed);
+				float4 topTint = lerp(_TopTint, _TopTintRange, i.seed);
+	
                 // colors from the tool with tinting from the grass script
-                float4 baseColor = lerp(_BottomTint, _TopTint, verticalFade) * float4(i.diffuseColor, 1);
-                
-                float4 final = baseColor;
+                float4 baseColor = lerp(bottomTint, topTint, verticalFade);
+				
                 uint index = i.index;
                 float4 diffuseColor = tex2DVariant(index, i.uv.xy);
+                baseColor *= float4(diffuseColor.rgb, 1);
                 // lookup the diffuse alpha value and clip if below cutoff 
                 // (DISABLE for full polygon fragment rendering)
                 clip(diffuseColor.a - _Cutoff);
 
 
+                float4 final = baseColor;
                 // get ambient color from environment lighting
                 float4 ambient = float4(ShadeSH9(float4(i.normalWS, 0)), 0);
 

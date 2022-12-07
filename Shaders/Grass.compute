@@ -98,9 +98,7 @@ DrawVertex GrassVertex(uint index, float3 positionOS, float2 size, float offset,
 
 	float3 newPosOS = positionOS + mul(rotation, tangentOffset + curveOffset) + curveOffset;
 	output.positionWS = mul(_LocalToWorld, float4(newPosOS, 1)).xyz;
-
-	output.uv = float3(uv, variant);
-	output.diffuseColor = float3(1, 1, 1);
+	output.uvWithIndex = float3(uv, variant);
 	// shadows is exactly as positionWS (no need to create a new variable)
 	return output;
 }
@@ -183,8 +181,9 @@ void Main(uint3 id : SV_DispatchThreadID)
 		cos(_Time.x * _WindSpeed + v0.x * 2) + cos(_Time.x * _WindSpeed + v0.z));
 	wind1 *= _WindStrength;
 
-	float3 seed = sv.positionOS.xyz;
+	float3 seed = v0;
 	float randomisedPos = rand(seed);
+	float randSeed = abs(randomisedPos);
 
 
 	// get per-blade properties
@@ -286,7 +285,7 @@ void Main(uint3 id : SV_DispatchThreadID)
 		for (int k = 0; k < numTrianglesPerBlade; ++k)
 		{
 			DrawTriangle tri = (DrawTriangle)0;
-			tri.normalOS = faceNormal;
+			tri.normalWithSeed = float4(faceNormal, abs(randSeed));
 			tri.vertices[0] = drawVertices[k];
 			tri.vertices[1] = drawVertices[k + 1];
 			tri.vertices[2] = drawVertices[k + 2];

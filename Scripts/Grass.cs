@@ -20,7 +20,7 @@ namespace VRTX.ComputeGrass
 
         // The size of one entry in the various compute buffers
         public const int SOURCE_VERT_STRIDE = sizeof(float) * (3 + 3 + 2);
-        public const int DRAW_STRIDE = sizeof(float) * (3 + (3 + 3 + 3) * 3);
+        public const int DRAW_STRIDE = sizeof(float) * (4 + (3 + 3) * 3);
         public const int INDIRECT_ARGS_STRIDE = sizeof(int) * 4;
         public const int BLADE_ARGS_STRIDE = sizeof(float) * 7; // see BladeArgs for number of members
 
@@ -439,6 +439,8 @@ namespace VRTX.ComputeGrass
 
             // set keywords on graphics shader
             m_graphicsPropertyBlock.SetInt("_NumOfVariants", this.m_definition.NumberOfVariants);
+            int maxSegmentsPerBlade = Mathf.Max(1, this.ActiveParameters.SegmentsPerBlade);
+            m_graphicsPropertyBlock.SetInt("_SegmentsPerBlade", maxSegmentsPerBlade);
 
             m_BladeArgsBuffer.SetData(m_definition.Arguments);
             for (int i = 0; i < MaximumVariants; i++)

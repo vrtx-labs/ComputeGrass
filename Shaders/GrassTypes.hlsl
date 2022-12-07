@@ -42,14 +42,13 @@ struct IndirectDrawArgs
 struct DrawVertex
 {
 	float3 positionWS; // The position in world space 
-	float3 uv;
-	float3 diffuseColor;
+	float3 uvWithIndex;
 };
 
 // A triangle on the generated mesh
 struct DrawTriangle
 {
-	float3 normalOS;
+	float4 normalWithSeed; // pack seed into fourth channel
 	DrawVertex vertices[3]; // The three points on the triangle
 };
 

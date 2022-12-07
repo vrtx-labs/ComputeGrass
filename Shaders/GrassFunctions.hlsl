@@ -8,10 +8,18 @@
 #define SAMPLE_ELSEVARIANT(id, indexName, texcoords) else if (indexName == id) return tex2D(_Variant##id, texcoords);
 
 
-// Helper Functions
+// Helper Functions   
 float rand(float3 co)
 {
 	return frac(sin(dot(co.xyz, float3(12.9898, 78.233, 53.539))) * 43758.5453);
+}
+float rand01(float3 co)
+{
+	return (frac(sin(dot(co.xyz, float3(12.9898, 78.233, 53.539))) * 43758.5453) + 1) * 0.5f;
+}
+float rand01(float2 co)
+{
+	return (frac(sin(dot(co.xy, float2(12.9898, 78.233))) * 43758.5453) + 1) * 0.5f;
 }
 
 // A function to compute an rotation matrix which rotates a point
@@ -32,6 +40,5 @@ float3x3 AngleAxis3x3(float angle, float3 axis)
 		t * x * y + s * z, t * y * y + c, t * y * z - s * x,
 		t * x * z - s * y, t * y * z + s * x, t * z * z + c);
 }
-
 
 #endif // COMPUTEGRASSFUNCTIONS_INCLUDED
