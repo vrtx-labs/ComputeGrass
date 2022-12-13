@@ -258,8 +258,6 @@ It handles the setup of grass data and buffers, invokation of the compute shader
 The generated source data, in form of a batch with it's associated definition and parameters, is processed by the grass component and allocated on the GPU.
 It configures and handles all buffers and data used by the compute shader or in the graphics shader. Afterwards it calls the GPU to render the computed geometry from the compute shader which results in rendered grass.
 The computation is invoked either only on activation or every frame, based on the `UpdateOn` parameter value.
-\
-The grass component is also responsible for the culling mechanism for the grass, this works identical to renderer culling within Unity (and utilizes an active MeshRenderer component) which allows for load and memory reduction for grass not visible or otherwise out of camera view.
 
 Though the grass component is the core component you will not see it in edit-time or interact with it directly.
 The lifecycle management is encapsulated in other components and hidden from the scene hierarchy.
