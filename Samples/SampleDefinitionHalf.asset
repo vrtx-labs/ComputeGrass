@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a88b874bf15e7d446a19f1b2142de09e, type: 3}
+  m_Name: SampleDefinitionHalf
+  m_EditorClassIdentifier: 
+  _numberOfVariants: 4
+  _densityMap: {fileID: 0}
+  _bladeArguments:
+  - height: 1
+    randomHeight: 0
+    aspectRatio: 0.5
+    radius: 0.25
+    forward: 0.25
+    curvature: 1
+    rootWidth: 1
+  - height: 1
+    randomHeight: 0
+    aspectRatio: 0.5
+    radius: 0.25
+    forward: 0.25
+    curvature: 2.5
+    rootWidth: 1
+  - height: 1
+    randomHeight: 0
+    aspectRatio: 0.5
+    radius: 0.25
+    forward: 0.25
+    curvature: 2.5
+    rootWidth: 1
+  - height: 1
+    randomHeight: 0
+    aspectRatio: 0.5
+    radius: 0.25
+    forward: 0.25
+    curvature: 2.5
+    rootWidth: 1
+  _bladeTextures:
+  - {fileID: 2800000, guid: 89efd057c037a194fad4c8876c849e3c, type: 3}
+  - {fileID: 2800000, guid: e3058a2a289d38a47b590db55a7bb99f, type: 3}
+  - {fileID: 2800000, guid: 24a520944703a0540af3ffee30ca833f, type: 3}
+  - {fileID: 2800000, guid: 38732e7410ff79f469b50531b072c06c, type: 3}

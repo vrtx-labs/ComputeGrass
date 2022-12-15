@@ -31,7 +31,6 @@ Shader "ComputeGrass/Grass (Graphics)"
         float2 uv : TEXCOORD0;          // texcoords and variant index
         float3 positionWS : TEXCOORD1;  // Position in world space
         float3 normalWS : TEXCOORD2;    // Normal vector in world space
-        float3 diffuseColor : COLOR;
         uint index : TEXCOORD6;
         float seed: TEXCOORD7;
         UNITY_LIGHTING_COORDS(3, 4)
@@ -109,7 +108,6 @@ Shader "ComputeGrass/Grass (Graphics)"
         
         return output;
     }
-    
     ENDCG
 
 
@@ -144,7 +142,6 @@ Shader "ComputeGrass/Grass (Graphics)"
 				
                 uint index = i.index;
                 float4 diffuseColor = tex2DVariant(index, i.uv.xy);
-                baseColor *= float4(diffuseColor.rgb, 1);
                 // lookup the diffuse alpha value and clip if below cutoff 
                 // (DISABLE for full polygon fragment rendering)
                 clip(diffuseColor.a - _Cutoff);

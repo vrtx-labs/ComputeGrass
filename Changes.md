@@ -2,6 +2,7 @@
 
 <!--TOC-->
   - [Releases](#releases)
+    - [0.4.4](#0.4.4)
     - [0.4.3](#0.4.3)
     - [0.4.2](#0.4.2)
     - [0.4.1](#0.4.1)
@@ -9,6 +10,9 @@
 <!--/TOC-->
 
 ## Releases
+### 0.4.4
+Fixed issue with doule texture color multiplication due to incomplete removal of per-vertex diffuse color from the shader.
+
 ### 0.4.3
 Removed MeshRenderer-based enabled state on all platforms (caused erratic behaviour on desktop platforms).
 

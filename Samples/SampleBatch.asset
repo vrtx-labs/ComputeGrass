@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59e14a5fde1c1824cbd18422b2f098ee, type: 3}
   m_Name: SampleBatch
   m_EditorClassIdentifier: 
-  definition: {fileID: 11400000, guid: 535ae36d3bd14774aaa545ba2f22d389, type: 2}
+  definition: {fileID: 11400000, guid: 4b8066a0697d6bf4ba82b246d83ff83a, type: 2}
   parameters: {fileID: 11400000, guid: e5f0a9794f98dc44197a543ff033a6e9, type: 2}
   meshes:
   - {fileID: 4300000, guid: 308346a586e004040899fbbf6edf23a8, type: 2}
