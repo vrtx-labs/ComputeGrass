@@ -236,6 +236,7 @@ namespace VRTX.ComputeGrass
 
         private void OnDisable()
         {
+#if UNITY_EDITOR
             // Dispose of buffers and copied shaders here
             if (m_Initialized)
             {
@@ -261,6 +262,7 @@ namespace VRTX.ComputeGrass
 
             m_Initialized = false;
             m_Computed = false;
+#endif
         }
 
         private void OnDestroy()

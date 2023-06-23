@@ -31,21 +31,24 @@ namespace VRTX.ComputeGrass
                     grass.gameObject.SetActive(true);
                 }
             }
+
+            SetGrassesActive(true);
         }
         private void OnDisable()
         {
-            // disable all grass components when the renderer is disabled
-            foreach (Grass grass in _grasses)
-            {
-                // if grass component exists disable it (each instance will handle cleanup on its own)
-                if (grass != null)
-                    grass.enabled = false;
-            }
+            SetGrassesActive(false);
+        }
+
+        private void SetGrassesActive(bool active)
+        {
+            foreach (Grass g in _grasses)
+                g.gameObject.SetActive(active);
         }
 
 
         private void DestroyPreviousObjects()
         {
+#if UNITY_EDITOR
             // check of application is playing (means either runtime or play mode in editor)
             if (Application.isPlaying)
             {
@@ -65,6 +68,7 @@ namespace VRTX.ComputeGrass
 
             // clear reference list from any remaining entries
             _grasses.Clear();
+#endif
         }
 
 
